@@ -1,0 +1,24 @@
+{
+  "name": "strudel-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for Strudel live coding integration",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "ts-node src/server.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.4.0",
+    "ws": "^8.14.2",
+    "openai": "^4.20.1",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "@types/ws": "^8.5.8",
+    "typescript": "^5.2.2",
+    "ts-node": "^10.9.1"
+  },
+  "type": "module"
+}

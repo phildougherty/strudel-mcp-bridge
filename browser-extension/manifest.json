@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Strudel MCP Bridge",
+  "version": "1.0.0",
+  "description": "Connect Strudel live coding to AI assistants via Model Context Protocol",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://strudel.cc/*",
+    "http://localhost:3000/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://strudel.cc/*",
+        "http://localhost:3000/*"
+      ],
+      "js": ["content-script.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Strudel MCP Bridge"
+  }
+}
