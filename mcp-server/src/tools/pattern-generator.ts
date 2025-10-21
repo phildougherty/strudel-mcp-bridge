@@ -312,8 +312,8 @@ Style: ${style}`;
     code = code.replace(/```[\w]*\n?/g, '');
 
     // Extract only the actual Strudel code by finding the pattern
-    // Look for setcps() to the end of the last closing parenthesis
-    const strudelCodeMatch = code.match(/setcps\([^)]+\)[\s\S]*?(?:\n(?![a-zA-Z\s]*:|^\d+\.|^-|^I've|^Here|^The|^This))*$/m);
+    // Look for setcps() and greedily capture all subsequent code
+    const strudelCodeMatch = code.match(/setcps\([^)]+\)[\s\S]*/);
     if (strudelCodeMatch) {
       code = strudelCodeMatch[0];
     }
@@ -456,15 +456,20 @@ CRITICAL RULES:
 - Do NOT use markdown code blocks
 - Do NOT add comments explaining what you did
 - Just return the raw, executable Strudel code
-- Preserve the general structure unless explicitly asked to change it
+- YOU MUST RETURN THE COMPLETE, FULL PATTERN - not just the parts that changed
+- Preserve ALL elements of the pattern (drums, bass, pads, melodies, etc.)
 - Keep working sounds and instruments unless asked to change them
-- Always include setcps() at the start`;
+- Always include setcps() at the start
+- Include ALL stack() layers from the original pattern
+- Only modify what was explicitly requested, keep everything else identical`;
 
     const userPrompt = `Current Strudel pattern:
 ${currentCode}
 
 Modification requested: ${modification}
 
+IMPORTANT: Return the COMPLETE modified pattern with ALL instruments and layers from the original.
+Do not return only the changed parts - return the ENTIRE working pattern with the modification applied.
 Return ONLY the modified Strudel code with no explanations.`;
 
     try {
