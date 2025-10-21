@@ -214,6 +214,7 @@ class StrudelMCPServer {
     }
   }
 
+
   private async handleModifyPattern(args: any) {
     const { modification } = args;
     

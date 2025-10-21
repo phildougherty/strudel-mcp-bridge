@@ -298,13 +298,13 @@ Style: ${style}`;
 
   private validateAllSounds(code: string): string {
     // Replace invalid sounds with valid ones
-    return code.replace(/s\("([^"]+)"\)/g, (match, soundName) => {
+    return code.replace(/s\("([^"]+)"\)/g, (match, soundName: string) => {
       if (this.isValidSound(soundName)) {
         return match;
       }
-      
+
       // Smart substitution based on sound name
-      const substitutions = {
+      const substitutions: Record<string, string> = {
         'bass': 'gm_acoustic_bass',
         'synth': 'sawtooth',
         'lead': 'gm_lead_1_square',
@@ -312,12 +312,12 @@ Style: ${style}`;
         'strings': 'gm_string_ensemble_1',
         'organ': 'gm_drawbar_organ'
       };
-      
+
       const substitute = substitutions[soundName.toLowerCase()];
       if (substitute) {
         return `s("${substitute}")`;
       }
-      
+
       // Default fallback
       return 's("bd")';
     });
@@ -337,7 +337,7 @@ Style: ${style}`;
     const bpm = tempo || 120;
     const cps = bpm / 60 / 4;
 
-    const advancedFallbacks = {
+    const advancedFallbacks: Record<string, string> = {
       'jazz': `setcps(${Math.max(cps * 0.8, 0.4)})\nstack(note("c d eb f").s("sax"), note("c,e,g").s("gm_piano"))`,
       'orchestral': `setcps(${cps})\nstack(note("c d e f").s("gm_violin"), note("c,e,g").s("gm_piano"))`,
       'electronic': `setcps(${cps})\nstack(s("bd*4").bank("tr909"), note("c2*4").s("supersaw").lpf(400))`,
@@ -371,15 +371,56 @@ Style: ${style}`;
   // Get drum machine specific sounds
   getDrumMachinePattern(machine: string): string | null {
     if (!this.isValidBank(machine)) return null;
-    
-    const patterns = {
+
+    const patterns: Record<string, string> = {
       'tr808': 'setcps(0.5)\nstack(s("bd*4").bank("tr808"), s("~ sd ~ sd").bank("tr808"), s("hh*8").bank("tr808"))',
       'tr909': 'setcps(0.5)\nstack(s("bd*4").bank("tr909"), s("~ sd ~ sd").bank("tr909"), s("hh*8").bank("tr909"))',
       'linn': 'setcps(0.5)\nstack(s("bd*4").bank("linn"), s("~ sd ~ sd").bank("linn"), s("hh*8").bank("linn"))',
       'dmx': 'setcps(0.55)\nstack(s("bd*4").bank("dmx"), s("~ sd ~ sd").bank("dmx"), s("hh*8").bank("dmx"))'
     };
-    
+
     return patterns[machine] || null;
+  }
+
+  async modifyPattern(currentCode: string, modification: string): Promise<string> {
+    const systemPrompt = `You are an expert Strudel live coding musician. You modify existing patterns based on user requests.
+
+IMPORTANT:
+- Preserve the general structure unless explicitly asked to change it
+- Keep working sounds and instruments unless asked to change them
+- Return ONLY executable Strudel code
+- Always include setcps() at the start`;
+
+    const userPrompt = `Current Strudel pattern:
+${currentCode}
+
+Modification requested: ${modification}
+
+Please modify the pattern accordingly and return the updated code.`;
+
+    try {
+      const response = await this.client.chat.completions.create({
+        model: this.model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.3,
+        max_tokens: 1500
+      });
+
+      let code = response.choices[0].message.content?.trim() || '';
+
+      // Extract CPS from current code to maintain tempo
+      const cpsMatch = currentCode.match(/setcps\(([\d.]+)\)/);
+      const currentCps = cpsMatch ? parseFloat(cpsMatch[1]) : 0.5;
+
+      return this.advancedValidation(code, currentCps);
+    } catch (error) {
+      console.error('Failed to modify pattern:', error);
+      // Return original code if modification fails
+      return currentCode;
+    }
   }
 
   getModel(): string {

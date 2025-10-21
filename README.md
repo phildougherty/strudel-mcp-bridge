@@ -14,11 +14,11 @@ A Model Context Protocol server that enables AI assistants to create music using
 ## Architecture
 
 ```
-Claude Desktop → MCP Server → WebSocket → Browser Extension → Strudel.cc
+Claude Desktop / Claude Code → MCP Server → WebSocket → Browser Extension → Strudel.cc
 ```
 
 The system consists of three components:
-1. **MCP Server**: TypeScript server that interfaces with AI models
+1. **MCP Server**: TypeScript server that interfaces with AI models (works with Claude Desktop or Claude Code CLI)
 2. **Browser Extension**: Chrome extension that communicates with Strudel
 3. **Strudel Integration**: Real-time pattern execution in the browser
 
@@ -81,7 +81,29 @@ Add the following configuration:
 
 Restart Claude Desktop completely after making changes.
 
-### 3. Browser Extension Installation
+### 3. Claude Code CLI Configuration
+
+If you're using [Claude Code](https://claude.com/claude-code), the CLI tool for Claude, setup is even simpler:
+
+```bash
+cd strudel-mcp-bridge/mcp-server
+npm install
+npm run build
+
+# Add the MCP server to Claude Code
+claude mcp add strudel node $(pwd)/dist/server.js
+```
+
+Make sure your `.env` file is configured with your OpenRouter API key before starting.
+
+To verify the connection:
+1. Start Claude Code: `claude`
+2. Check MCP status: `/mcp`
+3. You should see "strudel" listed as a connected server
+
+The MCP server will automatically start when you launch Claude Code and will be available for all your sessions.
+
+### 4. Browser Extension Installation
 
 #### Development Installation
 
