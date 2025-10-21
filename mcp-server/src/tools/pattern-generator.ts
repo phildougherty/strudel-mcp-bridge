@@ -144,7 +144,7 @@ export class PatternGenerator {
 
   private getSystemPrompt(): string {
     const popularList = Object.values(this.popularSounds).flat().join(', ');
-    
+
     return `You are an expert Strudel live coding musician. You have access to 2000+ sounds, but focus on the most musical ones.
 
 POPULAR SOUNDS (use these first): ${popularList}
@@ -153,7 +153,7 @@ SOUND CATEGORIES AVAILABLE:
 - Basic drums: bd, sd, hh, cp, oh, cr, etc.
 - Drum machines: Use .bank("tr808"), .bank("tr909"), .bank("linn"), etc.
 - GM instruments: gm_piano, gm_acoustic_bass, gm_violin, etc. (127 available)
-- Samples: piano, sax, kalimba, marimba, folkharp, etc. (120+ available)
+- Samples: piano, sax, kalimba, marimba, folkharp, woodblock, clave, etc. (120+ available)
 - Synths: sawtooth, sine, square, pulse, supersaw, etc.
 
 PROVEN WORKING EXAMPLES:
@@ -162,7 +162,7 @@ PROVEN WORKING EXAMPLES:
 setcps(0.5)
 stack(
   s("bd*4").bank("tr809"),
-  s("~ cp ~ cp").bank("tr909"), 
+  s("~ cp ~ cp").bank("tr909"),
   s("hh*8").bank("tr909").gain(0.4)
 )
 
@@ -190,7 +190,11 @@ SYNTAX RULES:
 - Stack: stack(pattern1, pattern2)
 - Effects: .room(0.5), .lpf(1000), .gain(0.8)
 
-CRITICAL: Return ONLY executable Strudel code!`;
+CRITICAL OUTPUT RULES:
+- Return ONLY executable Strudel code
+- NO explanations, NO descriptions, NO markdown
+- NO comments in the code
+- Just the raw code that can be executed directly`;
   }
 
   async generatePattern(description: string, style: string = 'general', tempo?: number): Promise<string> {
@@ -210,14 +214,14 @@ CRITICAL: Return ONLY executable Strudel code!`;
 You have access to ALL Strudel sounds including:
 - 30+ drum machines (tr808, tr909, linn, dmx, etc.)
 - 127 GM instruments (gm_piano, gm_violin, etc.)
-- 120+ sample instruments (kalimba, sax, marimba, etc.)
+- 120+ sample instruments (kalimba, sax, marimba, woodblock, clave, etc.)
 - 17 synthesizers (sawtooth, sine, pulse, etc.)
 
 Requirements:
 - Start with setcps(${cps})
 - Be creative with sound choices
 - Use appropriate sounds for the style
-- Return executable code only
+- Return ONLY executable code - no explanations, no markdown, no comments
 
 Style: ${style}`;
 
@@ -251,6 +255,8 @@ Style: ${style}`;
       'world_music': `setcps(${cps})\nstack(note("c d e g").s("kalimba"), note("c2*4").s("gm_sitar"), s("bd").s("darbuka"))`,
       'electronic_complex': `setcps(${cps})\nstack(s("bd*4").bank("tr909"), note("c2*8").s("supersaw").lpf(400), note("c4*4").s("gm_lead_1_square"))`,
       'ambient_orchestra': `setcps(${Math.max(cps * 0.5, 0.2)})\nstack(note("c,e,g").s("gm_pad_warm"), note("c5").s("gm_flute"), note("c2").s("gm_contrabass").slow(4))`,
+      'synthwave': `setcps(${cps})\nstack(s("bd*4, ~ cp ~ cp, [~ hh]*4").bank("tr808"), note("c1 ~ g0 ~").s("sawtooth").lpf(200).gain(0.8), note("c,eb,g").s("gm_pad_warm").room(0.6).slow(2), note("<c4 d4 eb4 g3>*2").s("supersaw").lpf(800).delay(0.3))`,
+      'dark_synthwave': `setcps(${cps})\nstack(s("bd*4, ~ sd ~ sd, hh*8, ~ ~ oh ~").bank("tr808"), note("c1 ~ ab0 ~").s("sawtooth").lpf(150).gain(0.9), note("c,eb,g").s("gm_pad_warm").room(0.8).slow(4).gain(0.6), note("<c4 eb4 f4 g4>").s("supersaw").lpf(600).delay(0.4).gain(0.7))`,
     };
 
     if (desc.includes('orchestra') || desc.includes('classical')) {
@@ -261,6 +267,12 @@ Style: ${style}`;
     }
     if (desc.includes('world') || desc.includes('ethnic')) {
       return templates.world_music;
+    }
+    if ((desc.includes('dark') || desc.includes('moody')) && desc.includes('synthwave')) {
+      return templates.dark_synthwave;
+    }
+    if (desc.includes('synthwave') || desc.includes('outrun') || desc.includes('retrowave')) {
+      return templates.synthwave;
     }
     if (desc.includes('electronic') && desc.includes('complex')) {
       return templates.electronic_complex;
@@ -290,10 +302,62 @@ Style: ${style}`;
   }
 
   private basicCleanup(code: string): string {
-    return code
-      .replace(/```[\s\S]*?```/g, '')
-      .replace(/\/\/.*$/gm, '')
-      .trim();
+    // First, try to extract code from markdown code blocks
+    const codeBlockMatch = code.match(/```(?:javascript|js)?\n?([\s\S]*?)```/);
+    if (codeBlockMatch) {
+      code = codeBlockMatch[1];
+    }
+
+    // Remove all markdown code block markers
+    code = code.replace(/```[\w]*\n?/g, '');
+
+    // Extract only the actual Strudel code by finding the pattern
+    // Look for setcps() to the end of the last closing parenthesis
+    const strudelCodeMatch = code.match(/setcps\([^)]+\)[\s\S]*?(?:\n(?![a-zA-Z\s]*:|^\d+\.|^-|^I've|^Here|^The|^This))*$/m);
+    if (strudelCodeMatch) {
+      code = strudelCodeMatch[0];
+    }
+
+    // Remove any remaining explanatory text (lines that start with common prose patterns)
+    const lines = code.split('\n');
+    const codeLinesOnly = [];
+    let inCode = false;
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+
+      // Skip empty lines at the beginning
+      if (!inCode && !trimmed) continue;
+
+      // Skip lines that look like explanations
+      if (trimmed.match(/^(Here'?s?|I'?ve|This|The|All|Modified:|Generated:|Note:|Added:)/i)) {
+        continue;
+      }
+
+      // Skip numbered lists and bullet points
+      if (trimmed.match(/^(\d+\.|[-*])\s/)) {
+        continue;
+      }
+
+      // If we hit actual code, start including lines
+      if (trimmed.startsWith('setcps') || trimmed.startsWith('stack') || trimmed.startsWith('note') || trimmed.startsWith('s(')) {
+        inCode = true;
+      }
+
+      if (inCode) {
+        codeLinesOnly.push(line);
+      }
+    }
+
+    // If we found code lines, use them; otherwise use the original
+    if (codeLinesOnly.length > 0) {
+      code = codeLinesOnly.join('\n');
+    }
+
+    // Remove single-line comments but preserve the code
+    code = code.replace(/\/\/.*$/gm, '');
+
+    return code.trim();
   }
 
   private validateAllSounds(code: string): string {
@@ -340,12 +404,13 @@ Style: ${style}`;
     const advancedFallbacks: Record<string, string> = {
       'jazz': `setcps(${Math.max(cps * 0.8, 0.4)})\nstack(note("c d eb f").s("sax"), note("c,e,g").s("gm_piano"))`,
       'orchestral': `setcps(${cps})\nstack(note("c d e f").s("gm_violin"), note("c,e,g").s("gm_piano"))`,
-      'electronic': `setcps(${cps})\nstack(s("bd*4").bank("tr909"), note("c2*4").s("supersaw").lpf(400))`,
+      'electronic': `setcps(${cps})\nstack(s("bd*4, ~ cp ~ cp, hh*8").bank("tr909"), note("c2*4").s("supersaw").lpf(400), note("c,e,g").s("gm_pad_warm").room(0.5))`,
+      'synthwave': `setcps(${cps})\nstack(s("bd*4, ~ sd ~ sd, hh*8").bank("tr808"), note("c1 ~ g0 ~").s("sawtooth").lpf(200), note("c,eb,g").s("gm_pad_warm").room(0.6).slow(2))`,
       'world': `setcps(${cps})\nstack(note("c d e g").s("kalimba"), s("bd ~ sd ~"))`,
       'ambient': `setcps(${Math.max(cps * 0.5, 0.2)})\nnote("c,e,g").s("gm_pad_warm").room(1).slow(4)`,
     };
 
-    return advancedFallbacks[style.toLowerCase()] || `setcps(${cps})\ns("bd ~ sd ~")`;
+    return advancedFallbacks[style.toLowerCase()] || `setcps(${cps})\nstack(s("bd*4").bank("tr808"), note("c2*4").s("sawtooth").lpf(300))`;
   }
 
   // Return the COMPLETE sound library
@@ -385,10 +450,14 @@ Style: ${style}`;
   async modifyPattern(currentCode: string, modification: string): Promise<string> {
     const systemPrompt = `You are an expert Strudel live coding musician. You modify existing patterns based on user requests.
 
-IMPORTANT:
+CRITICAL RULES:
+- Return ONLY executable Strudel code - NO explanations, NO descriptions, NO comments
+- Do NOT include any text before or after the code
+- Do NOT use markdown code blocks
+- Do NOT add comments explaining what you did
+- Just return the raw, executable Strudel code
 - Preserve the general structure unless explicitly asked to change it
 - Keep working sounds and instruments unless asked to change them
-- Return ONLY executable Strudel code
 - Always include setcps() at the start`;
 
     const userPrompt = `Current Strudel pattern:
@@ -396,7 +465,7 @@ ${currentCode}
 
 Modification requested: ${modification}
 
-Please modify the pattern accordingly and return the updated code.`;
+Return ONLY the modified Strudel code with no explanations.`;
 
     try {
       const response = await this.client.chat.completions.create({
