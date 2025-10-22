@@ -1,319 +1,431 @@
-# Strudel MCP Bridge
+# Strudel MCP Server
 
-A Model Context Protocol server that enables AI assistants to create music using Strudel live coding patterns. This bridge allows Claude Desktop and other MCP-compatible AI assistants to generate, execute, and modify Strudel patterns in real-time through your browser.
+Bridge Claude Code and Claude Desktop to [Strudel](https://strudel.cc), the browser-based live coding music environment.
 
-## Features
+## What is This?
 
-- Real-time Strudel pattern generation from natural language descriptions
-- Live pattern modification and iteration
-- Browser integration with visual feedback
-- Support for 2000+ Strudel sounds and drum machines
-- WebSocket-based communication for immediate audio playback
-- Comprehensive pattern validation and error handling
+This MCP server lets Claude AI assistants generate and play live-coded music directly in your browser using Strudel's powerful pattern language. Just describe what you want, and Claude will create the code and play it instantly.
+
+## Quick Start
+
+**1. Install dependencies:**
+```bash
+npm install
+```
+
+**2. Build the server:**
+```bash
+npm run build
+```
+
+**3. Start the server:**
+```bash
+npm start
+```
+
+**4. Open [strudel.cc](https://strudel.cc) in your browser and install the browser extension**
+
+**5. Ask Claude to make music!**
+```
+"Create a dark synthwave beat with heavy bass"
+"Add UK garage drums"
+"Make it faster and add reverb"
+```
 
 ## Architecture
 
 ```
-Claude Desktop / Claude Code → MCP Server → WebSocket → Browser Extension → Strudel.cc
+User → Claude (generates Strudel code) → MCP Server (bridge) → Browser → 🎵
 ```
 
-The system consists of three components:
-1. **MCP Server**: TypeScript server that interfaces with AI models (works with Claude Desktop or Claude Code CLI)
-2. **Browser Extension**: Chrome extension that communicates with Strudel
-3. **Strudel Integration**: Real-time pattern execution in the browser
+**Key Design:** This is a **simple bridge**. Claude generates the Strudel code, the server just forwards it to your browser.
+
+## Features
+
+- ✅ **No AI dependencies** - Claude generates the code itself
+- ✅ **No API keys required** - Zero configuration
+- ✅ **Real-time** - Instant music playback
+- ✅ **Comprehensive docs** - Embedded Strudel API reference
+- ✅ **Fast & lightweight** - 336 lines of code
+- ✅ **Works everywhere** - Claude Code, Claude Desktop, any MCP client
 
 ## Installation
 
-### 1. MCP Server Setup
-
-Clone and build the TypeScript server:
+### For Development / Local Use
 
 ```bash
-git clone <repository-url>
-cd strudel-mcp-bridge/mcp-server
+# Clone and install
+git clone <repo-url>
+cd mcp-server
+npm install
+npm run build
+npm start
+```
+
+### For Claude Desktop
+
+**1. Build the server:**
+```bash
+cd /path/to/strudel-mcp-bridge/mcp-server
 npm install
 npm run build
 ```
 
-Create environment configuration:
+**2. Add to Claude Desktop config:**
 
-```bash
-cp .env.example .env
-# Edit .env with your API credentials
-```
+Open your Claude Desktop MCP settings file:
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
-Required environment variables:
-
-```
-OPENROUTER_API_KEY=your-openrouter-api-key-here
-OPENROUTER_MODEL=anthropic/claude-3-5-sonnet-20241022
-OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
-```
-
-Get an API key from [OpenRouter.ai](https://openrouter.ai) and add credits to your account.
-
-### 2. Claude Desktop Configuration
-
-Edit your Claude Desktop configuration file:
-
-**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-
-Add the following configuration:
-
+Add this configuration:
 ```json
 {
   "mcpServers": {
-    "strudel-mcp-bridge": {
+    "strudel": {
       "command": "node",
-      "args": ["dist/server.js"],
-      "cwd": "/absolute/path/to/strudel-mcp-bridge/mcp-server",
-      "env": {
-        "OPENROUTER_API_KEY": "your-openrouter-api-key-here",
-        "OPENROUTER_MODEL": "anthropic/claude-3-5-sonnet-20241022"
-      }
+      "args": ["/absolute/path/to/strudel-mcp-bridge/mcp-server/dist/server.js"]
     }
   }
 }
 ```
 
-**Important**: Replace `/absolute/path/to/strudel-mcp-bridge/mcp-server` with your actual full path.
+**3. Restart Claude Desktop**
 
-Restart Claude Desktop completely after making changes.
+### For Browser Extension
 
-### 3. Claude Code CLI Configuration
+**1. Install the extension:**
+- Open Chrome/Edge and navigate to `chrome://extensions/`
+- Enable "Developer mode" in the top-right corner
+- Click "Load unpacked"
+- Select the `browser-extension` folder from this project
+- The extension should appear in your extensions list
 
-If you're using [Claude Code](https://claude.com/claude-code), the CLI tool for Claude, setup is even simpler:
+**2. Connect to strudel.cc:**
+- Open [strudel.cc](https://strudel.cc) in your browser
+- The extension will automatically connect to the MCP server
+- Look for a connection indicator (should turn green when connected)
 
-```bash
-cd strudel-mcp-bridge/mcp-server
-npm install
-npm run build
-
-# Add the MCP server to Claude Code
-claude mcp add strudel node $(pwd)/dist/server.js
+**3. Start making music!**
 ```
-
-Make sure your `.env` file is configured with your OpenRouter API key before starting.
-
-To verify the connection:
-1. Start Claude Code: `claude`
-2. Check MCP status: `/mcp`
-3. You should see "strudel" listed as a connected server
-
-The MCP server will automatically start when you launch Claude Code and will be available for all your sessions.
-
-### 4. Browser Extension Installation
-
-#### Development Installation
-
-1. Open Chrome and navigate to `chrome://extensions/`
-2. Enable "Developer mode" in the top-right corner
-3. Click "Load unpacked" and select the `browser-extension` folder
-4. The extension should appear in your extensions list
-
-#### Verify Installation
-
-1. Go to [strudel.cc](https://strudel.cc)
-2. Look for a connection indicator (colored circle) in the top-right corner of the page
-3. The indicator should change from red to green when connected
+"Create a jazzy beat with piano and brushed drums"
+"Make a dark techno track with 808 drums"
+"Add UK garage drums to this"
+```
 
 ## Usage
 
-### Basic Usage
+### How It Works
 
-1. **Start the system**:
-   - Open Claude Desktop
-   - Open strudel.cc in Chrome
-   - Verify the connection indicator shows green
+1. **You ask Claude** to create music (e.g., "make a techno beat")
+2. **Claude reads** the Strudel API reference (via MCP Resources)
+3. **Claude generates** valid Strudel code
+4. **MCP server** forwards the code to your browser via WebSocket
+5. **Browser plays** the music through Strudel
 
-2. **Create patterns**:
-   ```
-   Create a house beat with kick on every beat and hi-hats
-   ```
+### Browser Extension
 
-3. **Modify patterns**:
-   ```
-   Add a bassline to the current pattern
-   Make it faster
-   Add reverb
-   ```
+The browser extension bridges the MCP server to strudel.cc:
 
-4. **Stop playback**:
-   ```
-   Stop the current pattern
-   ```
+- Connects to WebSocket server at `ws://localhost:3001`
+- Injects code execution capabilities into Strudel
+- Provides visual connection status indicator
+- See installation instructions in the "Installation" section above
 
-### Available Commands
+### Example Session
 
-The system provides several MCP tools:
+```
+You: "Create a house beat with 808 drums"
+Claude: [reads strudel://reference resource]
+Claude: [generates Strudel code]
+Claude: [calls execute_pattern]
+Browser: 🎵 Music plays!
 
-- `create_live_pattern`: Generate and play new Strudel patterns
-- `modify_live_pattern`: Modify the currently playing pattern
-- `stop_pattern`: Stop all audio playback
-- `get_connection_status`: Check browser connection status
-- `set_ai_model`: Change the AI model used for generation
-- `get_ai_info`: Display current AI configuration
+You: "Add a deep bass line"
+Claude: [modifies the code]
+Claude: [calls execute_pattern]
+Browser: 🎵 Updated music plays!
+```
 
-## Debugging
+## MCP Resources
 
-### Browser Extension Debugging
+### strudel://reference
 
-1. **Open Developer Tools**:
-   - Go to strudel.cc
-   - Press F12 to open DevTools
-   - Check the Console tab for messages
+The complete Strudel API reference is exposed as an MCP Resource. This allows Claude Code and Claude Desktop to automatically access the documentation without needing file system access.
 
-2. **Extension Console**:
-   ```javascript
-   // Check bridge status
-   console.log(window.strudelMCPBridge);
-   
-   // Debug connection
-   debugStrudel();
-   
-   // Manual connection test
-   const testWS = new WebSocket('ws://localhost:3001');
-   testWS.onopen = () => console.log('WebSocket connected');
-   testWS.onerror = (e) => console.log('WebSocket error:', e);
-   ```
+**Resource Details:**
+- **URI:** `strudel://reference`
+- **Name:** Strudel API Reference
+- **MIME Type:** `text/markdown`
+- **Description:** Complete Strudel live coding API reference with syntax, sounds, effects, and examples
 
-3. **Connection Indicator**:
-   - Red circle: Disconnected or error
-   - Orange circle: Connecting
-   - Green circle: Connected and ready
-   - Click the circle for detailed status information
+**Usage:**
+MCP clients can fetch this resource at session start to provide the LLM with complete Strudel API knowledge. The documentation is embedded directly in the compiled server, making it fully portable even when installed via npm globally.
 
-### Common Issues
+**How to Fetch:**
+```json
+{
+  "method": "resources/read",
+  "params": {
+    "uri": "strudel://reference"
+  }
+}
+```
 
-1. **WebSocket Connection Failed**:
-   - Verify Claude Desktop is running
-   - Check that the MCP server started successfully
-   - Ensure port 3001 is not blocked by firewall
+The resource returns the complete markdown documentation including:
+- Mini-notation syntax and operators
+- 300+ sound sources (drums, synths, GM instruments, samples)
+- 70+ audio effects with parameters
+- Pattern structure and factories
+- Time modifiers and transformations
+- Style templates with examples
+- Critical rules and best practices
 
-2. **Audio Not Playing**:
-   - Click anywhere on the strudel.cc page to enable audio
-   - Check browser audio permissions
-   - Verify Strudel loaded completely
+## MCP Tools
 
-3. **Invalid Patterns**:
-   - The AI may generate non-existent sound names
-   - Syntax errors are automatically corrected when possible
-   - Check the browser console for specific Strudel errors
+### execute_pattern
 
-### MCP Server Debugging
+Execute raw Strudel code in the connected browser.
 
-Monitor server logs in Claude Desktop:
-- Successful connection: Look for "WebSocket server listening on port 3001"
-- Pattern generation: Check for OpenRouter API calls
-- Browser communication: Monitor WebSocket message logs
+**Parameters:**
+- `code` (string): Raw Strudel code to execute
 
-## Limitations and Known Issues
+**Example:**
+```javascript
+execute_pattern({
+  code: `setcps(0.5)
+stack(
+  s("bd*4, ~ sd ~ sd, hh*8").bank("tr808"),
+  note("c2*8").s("sawtooth").lpf(300)
+)`
+});
+```
 
-### AI Hallucinations
+### stop_pattern
 
-The AI model may occasionally:
+Stop all currently playing patterns.
 
-1. **Generate invalid sound names** (e.g., "bass", "synth", "lead")
-   - The system automatically replaces these with valid alternatives
-   - Valid sounds include: bd, sd, hh, cp, piano, sawtooth, sine, gm_acoustic_bass
+**Parameters:** None
 
-2. **Use incorrect Strudel syntax**:
-   - `.compress()` with wrong parameters
-   - Malformed mini-notation strings
-   - Missing quotes or brackets
+### get_connection_status
 
-3. **Create overly complex patterns** that may not sound musical
+Check if browser is connected and ready.
 
-### Syntax Validation
+**Parameters:** None
 
-The system includes automatic validation and correction:
-- Fixes unterminated strings
-- Replaces invalid sound names
-- Adds missing `setcps()` commands
-- Removes problematic functions
+**Returns:** Connection status information
 
-### Browser Compatibility
-
-- Requires modern Chrome, Firefox, Safari, or Edge
-- WebSocket connections must be allowed
-- Audio autoplay must be permitted after user interaction
-
-## Development
-
-### Project Structure
+## Project Structure
 
 ```
 strudel-mcp-bridge/
-├── mcp-server/
+├── mcp-server/                # MCP server (bridge to browser)
 │   ├── src/
-│   │   ├── server.ts              # Main MCP server
-│   │   ├── tools/
-│   │   │   └── pattern-generator.ts  # AI pattern generation
+│   │   ├── server.ts          # Main MCP server
 │   │   └── websocket/
-│   │       └── bridge-server.ts   # WebSocket communication
-│   ├── package.json
-│   └── tsconfig.json
-├── browser-extension/
-│   ├── manifest.json              # Extension configuration
-│   ├── content-script.js          # Strudel integration
-│   ├── background.js              # Extension service worker
-│   └── popup.html                 # Extension popup UI
-└── README.md
+│   │       └── bridge-server.ts  # WebSocket communication
+│   ├── STRUDEL_REFERENCE.md   # Strudel API docs (embedded in server)
+│   ├── MIGRATION_GUIDE.md     # v1.0 → v2.0 migration guide
+│   └── package.json
+├── browser-extension/         # Chrome extension (connects strudel.cc)
+│   ├── manifest.json
+│   ├── content-script.js
+│   ├── background.js
+│   └── popup.html
+└── README.md                  # This file
 ```
 
-### Building from Source
+## Why This Architecture?
+
+**Simple Bridge = Reliable:**
+- Claude generates the code (it's good at this!)
+- Server just forwards it (keeps it simple)
+- No double-AI translation issues
+- No API keys or configuration needed
+
+**Previous version had AI-in-server** which caused:
+- Double AI calls (slow, expensive)
+- Pattern complexity loss in translation
+- API key requirements
+- 1600+ lines of fragile validation code
+
+**Current version: Direct execution** = Fast, reliable, simple.
+
+See `MIGRATION_GUIDE.md` if upgrading from v1.0.
+
+## Development
+
+### MCP Server Development
 
 ```bash
-# MCP Server
 cd mcp-server
-npm install
-npm run build
-npm start  # For testing only
 
-# Browser Extension
-# Load unpacked extension in Chrome developer mode
+# Install dependencies
+npm install
+
+# Build
+npm run build
+
+# Development mode with watch
+npm run dev
+
+# Clean build
+rm -rf dist
+npm run build
 ```
 
-### Contributing
+### Browser Extension Development
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test with Claude Desktop and browser extension
-5. Submit a pull request
+```bash
+cd browser-extension
+
+# No build step needed - just load the extension in Chrome:
+# 1. Open chrome://extensions/
+# 2. Enable "Developer mode"
+# 3. Click "Load unpacked"
+# 4. Select the browser-extension folder
+```
+
+### Testing the Full Stack
+
+1. **Start MCP server** (via Claude Desktop or manually)
+2. **Install browser extension** (developer mode)
+3. **Open strudel.cc**
+4. **Check connection status** (indicator should be green)
+5. **Ask Claude** to create music
+6. **Verify** pattern plays in browser
+
+## Strudel Reference
+
+The complete Strudel API documentation is available in two ways:
+
+1. **MCP Resource** (Recommended): Access via `strudel://reference` resource - no file system access needed
+2. **File**: Read `STRUDEL_REFERENCE.md` if you have file system access
+
+The documentation includes:
+
+- Mini-notation syntax
+- 300+ sound sources (drums, synths, instruments, samples)
+- 70+ audio effects
+- Pattern factories and time modifiers
+- Style templates and examples
+- Critical rules and best practices
 
 ## Troubleshooting
 
-### Connection Issues
+### No Browser Connected
 
-Check the connection status with:
+**Symptoms:** `execute_pattern` returns "No browser connected"
+
+**Solutions:**
+1. Open strudel.cc in your browser
+2. Install the browser extension
+3. Check that WebSocket server is running on port 3001
+4. Use `get_connection_status` to verify
+
+### Invalid Strudel Code
+
+**Symptoms:** Pattern doesn't play or errors in browser
+
+**Solutions:**
+1. Ensure code starts with `setcps(NUMBER)`
+2. Check all sound names are valid (see STRUDEL_REFERENCE.md)
+3. Validate mini-notation syntax
+4. Check for balanced brackets and quotes
+
+### Build Errors
+
+**Solutions:**
+```bash
+rm -rf node_modules package-lock.json
+npm install
+npm run build
 ```
-get_connection_status
+
+## Architecture Details
+
+### WebSocket Protocol
+
+**Server → Browser:**
+```json
+{
+  "type": "execute_code",
+  "code": "setcps(0.5)\\nstack(...)"
+}
 ```
 
-### Audio Permissions
+```json
+{
+  "type": "stop_all"
+}
+```
 
-If audio doesn't play:
-1. Click anywhere on the strudel.cc page
-2. Look for browser audio permission prompts
-3. Check browser audio settings
+**Browser → Server:**
+```json
+{
+  "type": "execution_result",
+  "data": { "success": true }
+}
+```
 
-### Pattern Generation Issues
+```json
+{
+  "type": "browser_ready"
+}
+```
 
-If patterns don't sound right:
-- Patterns may use non-existent instruments
-- The system provides fallback patterns for reliability
-- Try simpler descriptions for better results
+### MCP Protocol
+
+Standard MCP protocol via stdio:
+- `tools/list` - List available tools
+- `tools/call` - Execute a tool
+
+## Contributing
+
+**Keep It Simple!** This server should remain a simple bridge.
+
+**Do NOT add:**
+- ❌ AI generation logic (Claude does this)
+- ❌ Pattern validation (adds complexity)
+- ❌ Code transformation (fragile)
+- ❌ API dependencies (increases setup friction)
+
+**Do add:**
+- ✅ Better WebSocket reliability
+- ✅ Improved error messages
+- ✅ Additional MCP resources (if useful)
+- ✅ Documentation improvements
+
+**Philosophy:** The intelligence is in Claude, not in this server.
+
+## FAQ
+
+**Q: Do I need an API key?**
+A: No! Zero configuration required.
+
+**Q: Can I use this with other LLMs besides Claude?**
+A: Yes! Any MCP-compatible AI can use this server. They'll need to read the `strudel://reference` resource and generate valid Strudel code.
+
+**Q: Does this work offline?**
+A: The MCP server works offline, but you need internet to access strudel.cc in your browser.
+
+**Q: Can I use a different port?**
+A: Currently hardcoded to 3001. Open an issue if you need this configurable.
+
+**Q: Does the browser extension work with Firefox/Safari?**
+A: Currently Chrome/Edge only (Manifest V3). Firefox support planned.
+
+**Q: Can I publish patterns to share with others?**
+A: Yes! Strudel has built-in sharing features. The patterns are just Strudel code.
+
+**Q: What if I want to use a different live coding environment?**
+A: The architecture is extensible - you could create a bridge to other environments like TidalCycles, Sonic Pi, etc.
 
 ## License
 
-MIT License - see LICENSE file for details
+MIT
 
-## Support
+## Credits
 
-For issues and questions:
-1. Check the browser console for error messages
-2. Verify all components are properly connected
-3. Review Claude Desktop MCP configuration
-4. Test with simple pattern descriptions first
+- [Strudel](https://strudel.cc) - Alex McLean, Felix Roos, and contributors
+- [MCP](https://modelcontextprotocol.io) - Anthropic
+- Built with ❤️ for live coding music
