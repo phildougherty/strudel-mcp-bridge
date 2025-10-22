@@ -18,9 +18,9 @@ npm install
 npm run build
 ```
 
-**3. Start the server:**
+**3. Install the MCP server:**
 ```bash
-npm start
+claude mcp add strudel node /path/to/strudel-mcp-bridge/mcp-server/dist/server.js -s user
 ```
 
 **4. Open [strudel.cc](https://strudel.cc) in your browser and install the browser extension**
